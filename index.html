@@ -1,36 +1,71 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kooralik - جدول المباريات</title>
-    
-    <!-- Tailwind CSS -->
+
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts: Cairo for Arabic UI -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-
     <style>
-        /* Apply Cairo font to the entire page */
+        :root {
+            --bg-color: #0f172a;
+            --bg-gradient: radial-gradient(circle at top, #1e293b, #0f172a);
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --text-color: #e2e8f0;
+            --highlight-color: #22c55e;
+            --live-color: #ef4444;
+            --secondary-bg: #111827;
+        }
+        [data-theme="light"] {
+            --bg-color: #f1f5f9;
+            --bg-gradient: radial-gradient(circle at top, #e2e8f0, #f1f5f9);
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-color: #1f2937;
+            --highlight-color: #10b981;
+            --live-color: #dc2626;
+            --secondary-bg: #f9fafb;
+        }
+
         body {
             font-family: 'Cairo', sans-serif;
+            background-color: var(--bg-color);
+            background-image: var(--bg-gradient);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
             scroll-behavior: smooth;
-            background-color: #0f172a; /* slate-900 */
-            background-image: radial-gradient(circle at top, #1e293b, #0f172a);
+        }
+        .bg-slate-800, .bg-slate-800\/50 { background-color: var(--card-bg); }
+        .bg-slate-900, .bg-slate-900\/50 { background-color: var(--secondary-bg); }
+        .border-slate-700, .border-slate-700\/50 { border-color: var(--border-color); }
+        .text-gray-200 { color: var(--text-color); }
+        .text-green-400 { color: var(--highlight-color); }
+        .text-red-400 { color: var(--live-color); }
+        .filter-btn-active {
+            background-color: var(--highlight-color) !important;
+            color: white !important;
+            box-shadow: 0 4px 14px 0 rgba(34, 197, 94, 0.39);
+            border-color: var(--highlight-color) !important;
+        }
+        .sidebar-link-active {
+            background-color: var(--secondary-bg);
+            color: var(--highlight-color);
+            font-weight: 700;
         }
         /* Custom scrollbar for a cleaner look */
         ::-webkit-scrollbar {
             width: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #1e293b;
+            background: var(--secondary-bg);
         }
         ::-webkit-scrollbar-thumb {
-            background: #334155;
+            background: var(--border-color);
             border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb:hover {
@@ -48,8 +83,8 @@
             to { transform: rotate(360deg); }
         }
         .loader {
-            border: 4px solid #334155;
-            border-left-color: #22c55e; /* green-500 */
+            border: 4px solid var(--border-color);
+            border-left-color: var(--highlight-color);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -62,68 +97,48 @@
         .fade-in {
             animation: fadeIn 0.5s ease-out forwards;
         }
-        /* Modal & Sidebar Styles */
         .modal-backdrop, .sidebar-overlay {
             transition: opacity 0.3s ease;
         }
         .modal-content, #leagues-sidebar {
             transition: transform 0.3s ease;
         }
-        /* Custom class for active links */
-        .filter-btn-active {
-            background-color: #22c55e !important;
-            color: white !important;
-            box-shadow: 0 4px 14px 0 rgba(34, 197, 94, 0.39);
-            border-color: #22c55e !important;
-        }
-        .sidebar-link-active {
-            background-color: #1e293b;
-            color: #22c55e;
-            font-weight: 700;
-        }
     </style>
 </head>
-<body class="bg-slate-900 text-gray-200">
-
-    <!-- Header Section -->
-    <header class="flex items-center justify-between p-4 bg-slate-800">
-        <div class="flex items-center">
+<body class="bg-slate-900 text-gray-200" data-theme="dark">
+    <header class="flex flex-col sm:flex-row items-center justify-between p-4 bg-slate-800">
+        <div class="flex items-center mb-4 sm:mb-0">
             <img src="kooralogo.png" alt="Kooralik Logo" class="h-12 mr-4">
             <h1 class="text-2xl font-bold text-white">Kooralik</h1>
         </div>
+        <div class="relative w-full max-w-sm sm:max-w-xs mb-4 sm:mb-0">
+            <input type="text" id="search-input" placeholder="ابحث عن فريق أو دوري..." class="bg-slate-700 text-white placeholder-gray-400 rounded-xl py-2 px-4 w-full focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-300">
+            <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+            </svg>
+        </div>
+        <button id="theme-toggle" class="p-2 rounded-full hover:bg-slate-700 transition-colors duration-200">
+            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-mode="dark"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+        </button>
     </header>
-
-    <!-- Main Content -->
     <main class="container mx-auto px-2 sm:px-4 py-8">
-
-        <!-- Filters -->
         <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
             <div class="bg-slate-800 p-2 rounded-xl flex justify-center items-center gap-2 w-full max-w-lg shadow-md">
                 <button id="btn-live" class="filter-btn flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 text-red-400 border border-transparent hover:border-red-500/50 hover:bg-red-500/10">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 5.168A1 1 0 008 6v8a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4z" clip-rule="evenodd"></path></svg>
                     <span>مباشر</span>
                 </button>
-                <button data-day="tomorrow" class="filter-btn date-filter-btn flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:bg-slate-700">
-                    <span>الغد</span>
-                </button>
-                <button data-day="today" class="filter-btn date-filter-btn flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 filter-btn-active">
-                    <span>اليوم</span>
-                </button>
-                <button data-day="yesterday" class="filter-btn date-filter-btn flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:bg-slate-700">
-                    <span>الأمس</span>
-                </button>
+                <input type="date" id="date-picker" class="flex-1 bg-transparent text-gray-300 rounded-lg p-2 text-center cursor-pointer focus:outline-none focus:ring-1 focus:ring-green-400 transition-colors">
             </div>
             <button id="toggle-sidebar-btn" class="md:hidden w-full max-w-lg bg-slate-700 text-white px-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
                 <span>تصفية الدوريات</span>
             </button>
         </div>
-        
-        <!-- Live Matches Section (Hidden by default) -->
+
         <div id="live-matches-section" class="mb-8 hidden">
              <div id="live-matches-container" class="space-y-4">
-                <!-- Live matches will be populated here -->
-             </div>
+                </div>
         </div>
 
         <div id="main-content-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -135,17 +150,14 @@
                 <ul id="leagues-list" class="space-y-2"></ul>
             </aside>
             <div class="sidebar-overlay hidden fixed inset-0 bg-black/60 z-40" onclick="toggleSidebar()"></div>
-
             <div id="matches-container" class="md:col-span-2 lg:col-span-3 space-y-6"></div>
         </div>
     </main>
-
     <footer class="bg-slate-900 mt-10 py-8 border-t border-slate-700/50">
         <div class="container mx-auto px-4 text-center text-gray-400">
             <p>&copy; 2025 Kooralik. جميع الحقوق محفوظة.</p>
         </div>
     </footer>
-
     <div id="match-details-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4 modal-backdrop opacity-0">
         <div class="modal-content bg-slate-800 rounded-2xl shadow-xl w-full max-w-md transform scale-95 border border-slate-700">
              <div class="flex justify-between items-center p-4 border-b border-slate-700">
@@ -162,6 +174,28 @@
                     <p><strong>الملعب:</strong> <span id="modal-venue"></span></p>
                     <p><strong>الحكم:</strong> <span id="modal-referee"></span></p>
                 </div>
+                <div class="mt-6 pt-4 border-t border-slate-700 text-center space-y-2 text-gray-300">
+                    <h4 class="font-bold text-lg">إحصائيات المباراة</h4>
+                    <div id="modal-stats" class="grid grid-cols-3 gap-4">
+                        <div>
+                            <p class="font-bold text-xl" id="stat-home-possession">0%</p>
+                            <p class="text-sm">الاستحواذ</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-xl" id="stat-shots">0</p>
+                            <p class="text-sm">التسديدات</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-xl" id="stat-away-possession">0%</p>
+                            <p class="text-sm">الاستحواذ</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-700 text-center space-y-2 text-gray-300">
+                    <h4 class="font-bold text-lg">أحداث المباراة</h4>
+                    <ul id="modal-events" class="text-right space-y-2">
+                        </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -175,19 +209,22 @@
 
         let allMatches = [];
         let currentLeagueFilter = null;
+        let searchTimeout;
 
         const matchesContainer = document.getElementById('matches-container');
         const liveMatchesContainer = document.getElementById('live-matches-container');
         const liveMatchesSection = document.getElementById('live-matches-section');
         const leaguesList = document.getElementById('leagues-list');
         const allFilterButtons = document.querySelectorAll('.filter-btn');
-        const dateFilterButtons = document.querySelectorAll('.date-filter-btn');
         const btnLive = document.getElementById('btn-live');
         const modal = document.getElementById('match-details-modal');
         const sidebar = document.getElementById('leagues-sidebar');
         const sidebarOverlay = document.querySelector('.sidebar-overlay');
         const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
         const mainContentGrid = document.getElementById('main-content-grid');
+        const searchInput = document.getElementById('search-input');
+        const datePicker = document.getElementById('date-picker');
+        const themeToggle = document.getElementById('theme-toggle');
 
         const getFormattedDate = (date) => {
             const year = date.getFullYear();
@@ -198,13 +235,13 @@
 
         const fetchMatches = async (dateString) => {
             currentLeagueFilter = null;
+            searchInput.value = '';
             mainContentGrid.classList.remove('hidden');
             liveMatchesSection.classList.add('hidden');
             matchesContainer.innerHTML = `<div class="flex flex-col justify-center items-center text-center text-gray-400 bg-slate-800/50 p-8 rounded-2xl"><div class="loader mb-4"></div><p class="text-xl">جاري تحميل المباريات...</p></div>`;
             leaguesList.innerHTML = '';
-
             const url = `${API_BASE_URL}/fixtures?date=${dateString}`;
-            
+
             try {
                 const response = await fetch(url, { method: 'GET', headers: { 'x-rapidapi-host': API_HOST, 'x-rapidapi-key': API_KEY }});
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -212,12 +249,14 @@
                 if (data.errors && Object.keys(data.errors).length > 0) throw new Error(`API Error: ${JSON.stringify(data.errors)}`);
 
                 allMatches = data.response.map(match => ({
+                    fixtureId: match.fixture.id,
                     league: { id: match.league.id, name: match.league.name, logo: match.league.logo },
                     status: match.fixture.status.short,
                     time: match.fixture.status.elapsed,
-                    fixtureTime: new Date(match.fixture.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-                    homeTeam: { name: match.teams.home.name, logo: match.teams.home.logo },
-                    awayTeam: { name: match.teams.away.name, logo: match.teams.away.logo },
+                    fixtureDate: new Date(match.fixture.date),
+                    fixtureTime: new Date(match.fixture.date).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                    homeTeam: { id: match.teams.home.id, name: match.teams.home.name, logo: match.teams.home.logo },
+                    awayTeam: { id: match.teams.away.id, name: match.teams.away.name, logo: match.teams.away.logo },
                     score: { home: match.goals.home, away: match.goals.away },
                     venue: match.fixture.venue.name,
                     referee: match.fixture.referee,
@@ -225,18 +264,49 @@
 
                 renderLeaguesSidebar(allMatches);
                 renderMatches(allMatches);
-
             } catch (error) {
                 console.error("Error fetching matches:", error);
                 matchesContainer.innerHTML = `<div class="text-center text-red-400 bg-slate-800/50 p-8 rounded-2xl"><p class="text-xl font-semibold">حدث خطأ!</p><p>فشل تحميل بيانات المباريات.</p></div>`;
             }
         };
-        
+
+        const fetchMatchDetails = async (fixtureId) => {
+            const url = `${API_BASE_URL}/fixtures/statistics?fixture=${fixtureId}`;
+            try {
+                const response = await fetch(url, { method: 'GET', headers: { 'x-rapidapi-host': API_HOST, 'x-rapidapi-key': API_KEY }});
+                const data = await response.json();
+                return data.response;
+            } catch (error) {
+                console.error("Error fetching match statistics:", error);
+                return null;
+            }
+        };
+
+        const fetchMatchEvents = async (fixtureId) => {
+            const url = `${API_BASE_URL}/fixtures/events?fixture=${fixtureId}`;
+            try {
+                const response = await fetch(url, { method: 'GET', headers: { 'x-rapidapi-host': API_HOST, 'x-rapidapi-key': API_KEY }});
+                const data = await response.json();
+                return data.response;
+            } catch (error) {
+                console.error("Error fetching match events:", error);
+                return null;
+            }
+        };
+
+        const showGoalNotification = (match) => {
+            if (Notification.permission === 'granted') {
+                const title = `هدف في مباراة ${match.homeTeam.name} - ${match.awayTeam.name}`;
+                const body = `النتيجة الآن: ${match.score.home} - ${match.score.away}`;
+                new Notification(title, { body: body });
+            }
+        };
+
         const renderLiveMatches = (matchesData) => {
             if (matchesData.length > 0) {
                 liveMatchesSection.classList.remove('hidden');
                 liveMatchesContainer.innerHTML = matchesData.map(match => {
-                     const matchIndex = allMatches.indexOf(match);
+                     const matchIndex = allMatches.findIndex(m => m.fixtureId === match.fixtureId);
                      return `
                         <div class="bg-slate-800/50 rounded-xl border border-slate-700/50 transition-all duration-300 fade-in overflow-hidden">
                             <div class="p-4 cursor-pointer hover:bg-slate-800" onclick="showMatchDetails(${matchIndex})">
@@ -275,7 +345,6 @@
              const uniqueLeagues = [...new Map(matchesData.map(m => [m.league.id, m.league])).values()]
                 .filter(l => priorityLeagues.includes(l.name))
                 .sort((a,b) => priorityLeagues.indexOf(a.name) - priorityLeagues.indexOf(b.name));
-
             leaguesList.innerHTML = `<li><a href="#" class="sidebar-link flex items-center gap-3 w-full text-right px-3 py-2 rounded-lg transition-colors duration-200 sidebar-link-active" onclick="handleLeagueClick(event, null)">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                 <span>كل الدوريات</span>
@@ -297,18 +366,15 @@
             }, {});
         };
 
-        const renderMatches = (matchesData, leagueFilterId = null) => {
-            let filteredData = leagueFilterId ? matchesData.filter(m => m.league.id === leagueFilterId) : matchesData;
-            
+        const renderMatches = (matchesData) => {
+            const filteredData = currentLeagueFilter ? matchesData.filter(m => m.league.id === currentLeagueFilter) : matchesData;
             matchesContainer.innerHTML = '';
             if (!filteredData || filteredData.length === 0) {
                 matchesContainer.innerHTML = `<div class="text-center text-gray-400 bg-slate-800/50 p-8 rounded-2xl border border-slate-700/50"><p class="text-xl">لا توجد مباريات متاحة لهذا الفلتر.</p></div>`;
                 return;
             }
-            
             const groupedLeagues = groupMatchesByLeague(filteredData);
             const priorityLeagues = ['UEFA Champions League', 'UEFA Europa League', 'Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1', 'Saudi Professional League', 'CAF Champions League', 'Copa Libertadores', 'AFC Champions League'];
-            
             const sortedLeagues = Object.values(groupedLeagues).sort((a, b) => {
                 const aPriority = priorityLeagues.indexOf(a.name);
                 const bPriority = priorityLeagues.indexOf(b.name);
@@ -317,14 +383,11 @@
                 if (bPriority !== -1) return 1;
                 return a.name.localeCompare(b.name);
             });
-
             for (const league of sortedLeagues) {
                 const leagueHeader = `<div class="flex items-center gap-3 px-4 py-2 bg-slate-800/50 rounded-t-2xl border-b-2 border-slate-700"><img src="${league.logo}" alt="${league.name}" class="w-8 h-8 object-contain" onerror="this.onerror=null;this.src='https://placehold.co/64x64/333/fff?text=L';"><h2 class="text-xl font-bold text-gray-200">${league.name}</h2></div>`;
-
                 const matchesHTML = league.matches.map(match => {
-                    const matchIndex = allMatches.indexOf(match);
+                    const matchIndex = allMatches.findIndex(m => m.fixtureId === match.fixtureId);
                     let scoreOrTime, liveIndicator = '', statusIndicator = '';
-                    
                     switch (match.status) {
                         case 'NS': scoreOrTime = `<div class="text-2xl font-bold text-gray-300 tracking-wider">${match.fixtureTime}</div>`; break;
                         case 'FT': case 'AET': case 'PEN':
@@ -337,7 +400,6 @@
                             scoreOrTime = `<div class="text-lg font-bold text-yellow-500">مؤجلة</div>`;
                             statusIndicator = `<div class="absolute top-3 left-3 text-yellow-400 font-semibold">${match.status}</div>`; break;
                     }
-
                     return `<div class="relative bg-slate-800/50 p-4 border-b border-slate-700/50 last:border-b-0 last:rounded-b-2xl cursor-pointer hover:bg-slate-800 transition-colors duration-200 fade-in" onclick="showMatchDetails(${matchIndex})">
                             ${liveIndicator} ${statusIndicator}
                             <div class="flex justify-around items-center text-center">
@@ -347,17 +409,17 @@
                             </div>
                         </div>`;
                 }).join('');
-
                 const leagueContainer = document.createElement('div');
                 leagueContainer.className = 'bg-slate-800/50 rounded-2xl shadow-lg overflow-hidden border border-slate-700/50 fade-in';
                 leagueContainer.innerHTML = leagueHeader + matchesHTML;
                 matchesContainer.appendChild(leagueContainer);
             }
         };
-        
-        const showMatchDetails = (index) => {
+
+        const showMatchDetails = async (index) => {
             const match = allMatches[index];
             if (!match) return;
+
             document.getElementById('modal-league-info').innerHTML = `<img src="${match.league.logo}" class="w-8 h-8 object-contain"><span class="font-semibold">${match.league.name}</span>`;
             document.getElementById('modal-home-logo').src = match.homeTeam.logo;
             document.getElementById('modal-home-name').textContent = match.homeTeam.name;
@@ -365,13 +427,46 @@
             document.getElementById('modal-away-name').textContent = match.awayTeam.name;
             document.getElementById('modal-venue').textContent = match.venue || 'غير محدد';
             document.getElementById('modal-referee').textContent = match.referee || 'غير محدد';
-            
+
             let scoreOrTimeHTML = '';
             if (match.status === 'NS') scoreOrTimeHTML = `<div class="text-3xl font-bold text-gray-300 tracking-wider">${match.fixtureTime}</div>`;
             else if (['FT', 'AET', 'PEN'].includes(match.status)) scoreOrTimeHTML = `<div class="text-4xl font-bold text-white">${match.score.home} - ${match.score.away}</div><div class="text-sm text-gray-400 mt-1">${match.status}</div>`;
             else if (['1H', 'HT', '2H', 'ET'].includes(match.status)) scoreOrTimeHTML = `<div class="text-4xl font-bold text-green-400">${match.score.home} - ${match.score.away}</div><div class="text-sm text-red-500 mt-1">${match.time}'</div>`;
             else scoreOrTimeHTML = `<div class="text-xl font-bold text-yellow-500">مؤجلة</div>`;
             document.getElementById('modal-score-time').innerHTML = scoreOrTimeHTML;
+
+            // Fetch and display match statistics
+            const statsData = await fetchMatchDetails(match.fixtureId);
+            const homeStats = statsData.find(s => s.team.id === match.homeTeam.id)?.statistics || [];
+            const awayStats = statsData.find(s => s.team.id === match.awayTeam.id)?.statistics || [];
+            const homePossession = homeStats.find(s => s.type === 'Ball Possession')?.value || '0%';
+            const awayPossession = awayStats.find(s => s.type === 'Ball Possession')?.value || '0%';
+            const homeShots = homeStats.find(s => s.type === 'Total Shots')?.value || '0';
+            const awayShots = awayStats.find(s => s.type === 'Total Shots')?.value || '0';
+
+            document.getElementById('stat-home-possession').textContent = homePossession;
+            document.getElementById('stat-shots').textContent = `${homeShots} - ${awayShots}`;
+            document.getElementById('stat-away-possession').textContent = awayPossession;
+
+            // Fetch and display match events
+            const eventsData = await fetchMatchEvents(match.fixtureId);
+            const eventsList = document.getElementById('modal-events');
+            eventsList.innerHTML = '';
+            if (eventsData && eventsData.length > 0) {
+                eventsData.sort((a,b) => a.time.elapsed - b.time.elapsed);
+                eventsData.forEach(event => {
+                    let icon = '';
+                    if (event.type === 'Goal') icon = '⚽';
+                    else if (event.type === 'Card') icon = '🟨';
+                    else if (event.type === 'subst') icon = '🔄';
+                    const eventText = `${event.time.elapsed}' - ${event.detail}: ${event.player.name} (${event.team.name}) ${icon}`;
+                    const li = document.createElement('li');
+                    li.textContent = eventText;
+                    eventsList.appendChild(li);
+                });
+            } else {
+                eventsList.innerHTML = '<li class="text-center text-gray-400">لا توجد أحداث متاحة.</li>';
+            }
 
             modal.classList.remove('hidden');
             setTimeout(() => {
@@ -385,58 +480,68 @@
             modal.querySelector('.modal-content').classList.add('scale-95');
             setTimeout(() => modal.classList.add('hidden'), 300);
         };
-        
+
         const toggleSidebar = () => {
             sidebar.classList.toggle('translate-x-full');
             sidebarOverlay.classList.toggle('hidden');
         };
 
-        const handleDateFilterClick = (e) => {
-            const day = e.currentTarget.dataset.day;
-            allFilterButtons.forEach(btn => btn.classList.remove('filter-btn-active'));
-            e.currentTarget.classList.add('filter-btn-active');
-            
-            const today = new Date();
-            let targetDate = new Date();
-            if (day === 'yesterday') targetDate.setDate(today.getDate() - 1);
-            if (day === 'tomorrow') targetDate.setDate(today.getDate() + 1);
-            
-            fetchMatches(getFormattedDate(targetDate));
+        const handleSearch = () => {
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            let filteredMatches = [];
+            if (searchTerm === '') {
+                filteredMatches = allMatches;
+            } else {
+                filteredMatches = allMatches.filter(match =>
+                    match.homeTeam.name.toLowerCase().includes(searchTerm) ||
+                    match.awayTeam.name.toLowerCase().includes(searchTerm) ||
+                    match.league.name.toLowerCase().includes(searchTerm)
+                );
+            }
+            renderMatches(filteredMatches);
         };
 
-        const handleLiveClick = () => {
-            allFilterButtons.forEach(btn => btn.classList.remove('filter-btn-active'));
-            btnLive.classList.add('filter-btn-active');
-
-            mainContentGrid.classList.add('hidden');
-            const liveStatuses = ['1H', 'HT', '2H', 'ET', 'P'];
-            const liveMatches = allMatches.filter(m => liveStatuses.includes(m.status));
-            renderLiveMatches(liveMatches);
-        };
-
-        const handleLeagueClick = (event, leagueId) => {
-            event.preventDefault();
-            currentLeagueFilter = leagueId;
-            renderMatches(allMatches, currentLeagueFilter);
-
-            document.querySelectorAll('#leagues-list .sidebar-link').forEach(link => link.classList.remove('sidebar-link-active'));
-            event.currentTarget.classList.add('sidebar-link-active');
-            
-            if (window.innerWidth < 768) { // md breakpoint
-                toggleSidebar();
+        const toggleTheme = () => {
+            const currentTheme = document.body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', newTheme);
+            const icon = themeToggle.querySelector('svg');
+            if (newTheme === 'dark') {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+            } else {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
             }
         };
 
-        dateFilterButtons.forEach(button => button.addEventListener('click', handleDateFilterClick));
+        const requestNotificationPermission = () => {
+            if (!("Notification" in window)) {
+                console.log("This browser does not support desktop notification");
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        };
+
+        datePicker.addEventListener('change', (e) => {
+            const selectedDate = e.target.value;
+            allFilterButtons.forEach(btn => btn.classList.remove('filter-btn-active'));
+            fetchMatches(selectedDate);
+        });
         btnLive.addEventListener('click', handleLiveClick);
         modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
         toggleSidebarBtn.addEventListener('click', toggleSidebar);
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(handleSearch, 300);
+        });
+        themeToggle.addEventListener('click', toggleTheme);
 
         document.addEventListener('DOMContentLoaded', () => {
             const today = new Date();
-            fetchMatches(getFormattedDate(today));
+            const formattedToday = getFormattedDate(today);
+            datePicker.value = formattedToday;
+            fetchMatches(formattedToday);
+            requestNotificationPermission();
         });
-
     </script>
 </body>
 </html>
