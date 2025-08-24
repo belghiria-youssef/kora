@@ -1,0 +1,442 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kooralik - جدول المباريات</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Cairo for Arabic UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Apply Cairo font to the entire page */
+        body {
+            font-family: 'Cairo', sans-serif;
+            scroll-behavior: smooth;
+            background-color: #0f172a; /* slate-900 */
+            background-image: radial-gradient(circle at top, #1e293b, #0f172a);
+        }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        /* Animations */
+        @keyframes pulse-live {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .animate-pulse-live {
+            animation: pulse-live 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loader {
+            border: 4px solid #334155;
+            border-left-color: #22c55e; /* green-500 */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        /* Modal & Sidebar Styles */
+        .modal-backdrop, .sidebar-overlay {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content, #leagues-sidebar {
+            transition: transform 0.3s ease;
+        }
+        /* Custom class for active links */
+        .filter-btn-active {
+            background-color: #22c55e !important;
+            color: white !important;
+            box-shadow: 0 4px 14px 0 rgba(34, 197, 94, 0.39);
+            border-color: #22c55e !important;
+        }
+        .sidebar-link-active {
+            background-color: #1e293b;
+            color: #22c55e;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-gray-200">
+
+    <!-- Header Section -->
+    <header class="flex items-center justify-between p-4 bg-slate-800">
+        <div class="flex items-center">
+            <img src="kooralogo.png" alt="Kooralik Logo" class="h-12 mr-4">
+            <h1 class="text-2xl font-bold text-white">Kooralik</h1>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-2 sm:px-4 py-8">
+
+        <!-- Filters -->
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+            <div class="bg-slate-800 p-2 rounded-xl flex justify-center items-center gap-2 w-full max-w-lg shadow-md">
+                <button id="btn-live" class="filter-btn flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 text-red-400 border border-transparent hover:border-red-500/50 hover:bg-red-500/10">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 5.168A1 1 0 008 6v8a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4z" clip-rule="evenodd"></path></svg>
+                    <span>مباشر</span>
+                </button>
+                <button data-day="tomorrow" class="filter-btn date-filter-btn flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:bg-slate-700">
+                    <span>الغد</span>
+                </button>
+                <button data-day="today" class="filter-btn date-filter-btn flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 filter-btn-active">
+                    <span>اليوم</span>
+                </button>
+                <button data-day="yesterday" class="filter-btn date-filter-btn flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:bg-slate-700">
+                    <span>الأمس</span>
+                </button>
+            </div>
+            <button id="toggle-sidebar-btn" class="md:hidden w-full max-w-lg bg-slate-700 text-white px-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
+                <span>تصفية الدوريات</span>
+            </button>
+        </div>
+        
+        <!-- Live Matches Section (Hidden by default) -->
+        <div id="live-matches-section" class="mb-8 hidden">
+             <div id="live-matches-container" class="space-y-4">
+                <!-- Live matches will be populated here -->
+             </div>
+        </div>
+
+        <div id="main-content-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <aside id="leagues-sidebar" class="md:col-span-1 md:block bg-slate-800/50 rounded-2xl p-4 h-fit fixed md:relative top-0 right-0 h-full w-64 md:w-auto z-50 transform translate-x-full md:translate-x-0 border border-slate-700/50">
+                <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-700">
+                    <h3 class="text-xl font-bold text-green-400">الدوريات</h3>
+                    <button class="md:hidden text-2xl" onclick="toggleSidebar()">&times;</button>
+                </div>
+                <ul id="leagues-list" class="space-y-2"></ul>
+            </aside>
+            <div class="sidebar-overlay hidden fixed inset-0 bg-black/60 z-40" onclick="toggleSidebar()"></div>
+
+            <div id="matches-container" class="md:col-span-2 lg:col-span-3 space-y-6"></div>
+        </div>
+    </main>
+
+    <footer class="bg-slate-900 mt-10 py-8 border-t border-slate-700/50">
+        <div class="container mx-auto px-4 text-center text-gray-400">
+            <p>&copy; 2025 Kooralik. جميع الحقوق محفوظة.</p>
+        </div>
+    </footer>
+
+    <div id="match-details-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4 modal-backdrop opacity-0">
+        <div class="modal-content bg-slate-800 rounded-2xl shadow-xl w-full max-w-md transform scale-95 border border-slate-700">
+             <div class="flex justify-between items-center p-4 border-b border-slate-700">
+                <div id="modal-league-info" class="flex items-center gap-3"></div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white text-3xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <div class="flex justify-around items-center text-center">
+                    <div class="flex-1 flex flex-col items-center gap-2"><img id="modal-home-logo" src="" alt="" class="w-20 h-20 object-contain"><h3 id="modal-home-name" class="font-bold text-lg"></h3></div>
+                    <div class="w-28" id="modal-score-time"></div>
+                    <div class="flex-1 flex flex-col items-center gap-2"><img id="modal-away-logo" src="" alt="" class="w-20 h-20 object-contain"><h3 id="modal-away-name" class="font-bold text-lg"></h3></div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-700 text-center space-y-2 text-gray-300">
+                    <p><strong>الملعب:</strong> <span id="modal-venue"></span></p>
+                    <p><strong>الحكم:</strong> <span id="modal-referee"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- START: API Configuration ---
+        const API_KEY = '6cdb79349113fa71f35197659d70349c';
+        const API_HOST = 'v3.football.api-sports.io';
+        const API_BASE_URL = `https://${API_HOST}`;
+        // --- END: API Configuration ---
+
+        let allMatches = [];
+        let currentLeagueFilter = null;
+
+        const matchesContainer = document.getElementById('matches-container');
+        const liveMatchesContainer = document.getElementById('live-matches-container');
+        const liveMatchesSection = document.getElementById('live-matches-section');
+        const leaguesList = document.getElementById('leagues-list');
+        const allFilterButtons = document.querySelectorAll('.filter-btn');
+        const dateFilterButtons = document.querySelectorAll('.date-filter-btn');
+        const btnLive = document.getElementById('btn-live');
+        const modal = document.getElementById('match-details-modal');
+        const sidebar = document.getElementById('leagues-sidebar');
+        const sidebarOverlay = document.querySelector('.sidebar-overlay');
+        const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+        const mainContentGrid = document.getElementById('main-content-grid');
+
+        const getFormattedDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const fetchMatches = async (dateString) => {
+            currentLeagueFilter = null;
+            mainContentGrid.classList.remove('hidden');
+            liveMatchesSection.classList.add('hidden');
+            matchesContainer.innerHTML = `<div class="flex flex-col justify-center items-center text-center text-gray-400 bg-slate-800/50 p-8 rounded-2xl"><div class="loader mb-4"></div><p class="text-xl">جاري تحميل المباريات...</p></div>`;
+            leaguesList.innerHTML = '';
+
+            const url = `${API_BASE_URL}/fixtures?date=${dateString}`;
+            
+            try {
+                const response = await fetch(url, { method: 'GET', headers: { 'x-rapidapi-host': API_HOST, 'x-rapidapi-key': API_KEY }});
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                if (data.errors && Object.keys(data.errors).length > 0) throw new Error(`API Error: ${JSON.stringify(data.errors)}`);
+
+                allMatches = data.response.map(match => ({
+                    league: { id: match.league.id, name: match.league.name, logo: match.league.logo },
+                    status: match.fixture.status.short,
+                    time: match.fixture.status.elapsed,
+                    fixtureTime: new Date(match.fixture.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                    homeTeam: { name: match.teams.home.name, logo: match.teams.home.logo },
+                    awayTeam: { name: match.teams.away.name, logo: match.teams.away.logo },
+                    score: { home: match.goals.home, away: match.goals.away },
+                    venue: match.fixture.venue.name,
+                    referee: match.fixture.referee,
+                }));
+
+                renderLeaguesSidebar(allMatches);
+                renderMatches(allMatches);
+
+            } catch (error) {
+                console.error("Error fetching matches:", error);
+                matchesContainer.innerHTML = `<div class="text-center text-red-400 bg-slate-800/50 p-8 rounded-2xl"><p class="text-xl font-semibold">حدث خطأ!</p><p>فشل تحميل بيانات المباريات.</p></div>`;
+            }
+        };
+        
+        const renderLiveMatches = (matchesData) => {
+            if (matchesData.length > 0) {
+                liveMatchesSection.classList.remove('hidden');
+                liveMatchesContainer.innerHTML = matchesData.map(match => {
+                     const matchIndex = allMatches.indexOf(match);
+                     return `
+                        <div class="bg-slate-800/50 rounded-xl border border-slate-700/50 transition-all duration-300 fade-in overflow-hidden">
+                            <div class="p-4 cursor-pointer hover:bg-slate-800" onclick="showMatchDetails(${matchIndex})">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3 flex-1 justify-end">
+                                        <span class="text-base font-semibold text-right">${match.homeTeam.name}</span>
+                                        <img src="${match.homeTeam.logo}" class="w-8 h-8 object-contain">
+                                    </div>
+                                    <div class="mx-4 text-center">
+                                        <div class="text-2xl font-bold text-green-400">${match.score.home} - ${match.score.away}</div>
+                                        <div class="text-sm text-red-500 animate-pulse-live">${match.time}'</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 flex-1 justify-start">
+                                        <img src="${match.awayTeam.logo}" class="w-8 h-8 object-contain">
+                                        <span class="text-base font-semibold text-left">${match.awayTeam.name}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-slate-900/50 p-2">
+                                <a href="http://www.koraa-live.net" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 w-full text-sm font-semibold text-green-400 hover:bg-green-500/10 py-2 rounded-lg transition-colors">
+                                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></svg>
+                                     <span>شاهد البث المباشر</span>
+                                </a>
+                            </div>
+                        </div>
+                     `;
+                }).join('');
+            } else {
+                liveMatchesSection.classList.remove('hidden');
+                liveMatchesContainer.innerHTML = `<div class="text-center text-gray-400 bg-slate-800/50 p-8 rounded-2xl border border-slate-700/50"><p class="text-xl">لا توجد مباريات مباشرة حاليًا.</p></div>`;
+            }
+        };
+
+        const renderLeaguesSidebar = (matchesData) => {
+             const priorityLeagues = ['UEFA Champions League', 'UEFA Europa League', 'Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1', 'Saudi Professional League', 'CAF Champions League', 'Copa Libertadores', 'AFC Champions League'];
+             const uniqueLeagues = [...new Map(matchesData.map(m => [m.league.id, m.league])).values()]
+                .filter(l => priorityLeagues.includes(l.name))
+                .sort((a,b) => priorityLeagues.indexOf(a.name) - priorityLeagues.indexOf(b.name));
+
+            leaguesList.innerHTML = `<li><a href="#" class="sidebar-link flex items-center gap-3 w-full text-right px-3 py-2 rounded-lg transition-colors duration-200 sidebar-link-active" onclick="handleLeagueClick(event, null)">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                <span>كل الدوريات</span>
+            </a></li>`;
+            uniqueLeagues.forEach(league => {
+                leaguesList.innerHTML += `<li><a href="#" class="sidebar-link flex items-center gap-3 w-full text-right px-3 py-2 rounded-lg transition-colors duration-200 hover:bg-slate-700/50" onclick="handleLeagueClick(event, ${league.id})">
+                    <img src="${league.logo}" class="w-5 h-5 object-contain rounded-full">
+                    <span>${league.name}</span>
+                </a></li>`;
+            });
+        };
+
+        const groupMatchesByLeague = (matches) => {
+            return matches.reduce((acc, match) => {
+                const leagueId = match.league.id;
+                if (!acc[leagueId]) { acc[leagueId] = { ...match.league, matches: [] }; }
+                acc[leagueId].matches.push(match);
+                return acc;
+            }, {});
+        };
+
+        const renderMatches = (matchesData, leagueFilterId = null) => {
+            let filteredData = leagueFilterId ? matchesData.filter(m => m.league.id === leagueFilterId) : matchesData;
+            
+            matchesContainer.innerHTML = '';
+            if (!filteredData || filteredData.length === 0) {
+                matchesContainer.innerHTML = `<div class="text-center text-gray-400 bg-slate-800/50 p-8 rounded-2xl border border-slate-700/50"><p class="text-xl">لا توجد مباريات متاحة لهذا الفلتر.</p></div>`;
+                return;
+            }
+            
+            const groupedLeagues = groupMatchesByLeague(filteredData);
+            const priorityLeagues = ['UEFA Champions League', 'UEFA Europa League', 'Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1', 'Saudi Professional League', 'CAF Champions League', 'Copa Libertadores', 'AFC Champions League'];
+            
+            const sortedLeagues = Object.values(groupedLeagues).sort((a, b) => {
+                const aPriority = priorityLeagues.indexOf(a.name);
+                const bPriority = priorityLeagues.indexOf(b.name);
+                if (aPriority !== -1 && bPriority !== -1) return aPriority - bPriority;
+                if (aPriority !== -1) return -1;
+                if (bPriority !== -1) return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            for (const league of sortedLeagues) {
+                const leagueHeader = `<div class="flex items-center gap-3 px-4 py-2 bg-slate-800/50 rounded-t-2xl border-b-2 border-slate-700"><img src="${league.logo}" alt="${league.name}" class="w-8 h-8 object-contain" onerror="this.onerror=null;this.src='https://placehold.co/64x64/333/fff?text=L';"><h2 class="text-xl font-bold text-gray-200">${league.name}</h2></div>`;
+
+                const matchesHTML = league.matches.map(match => {
+                    const matchIndex = allMatches.indexOf(match);
+                    let scoreOrTime, liveIndicator = '', statusIndicator = '';
+                    
+                    switch (match.status) {
+                        case 'NS': scoreOrTime = `<div class="text-2xl font-bold text-gray-300 tracking-wider">${match.fixtureTime}</div>`; break;
+                        case 'FT': case 'AET': case 'PEN':
+                            scoreOrTime = `<div class="text-3xl font-bold text-white">${match.score.home} - ${match.score.away}</div>`;
+                            statusIndicator = `<div class="absolute top-3 left-3 text-gray-400 font-semibold">${match.status}</div>`; break;
+                        case '1H': case 'HT': case '2H': case 'ET':
+                            scoreOrTime = `<div class="text-3xl font-bold text-green-400">${match.score.home} - ${match.score.away}</div>`;
+                            liveIndicator = `<div class="absolute top-3 left-3 flex items-center gap-2 text-red-500 animate-pulse-live"><span class="font-semibold">${match.time}'</span></div>`; break;
+                        default:
+                            scoreOrTime = `<div class="text-lg font-bold text-yellow-500">مؤجلة</div>`;
+                            statusIndicator = `<div class="absolute top-3 left-3 text-yellow-400 font-semibold">${match.status}</div>`; break;
+                    }
+
+                    return `<div class="relative bg-slate-800/50 p-4 border-b border-slate-700/50 last:border-b-0 last:rounded-b-2xl cursor-pointer hover:bg-slate-800 transition-colors duration-200 fade-in" onclick="showMatchDetails(${matchIndex})">
+                            ${liveIndicator} ${statusIndicator}
+                            <div class="flex justify-around items-center text-center">
+                                <div class="flex-1 flex flex-col items-center gap-2"><img src="${match.homeTeam.logo}" alt="${match.homeTeam.name}" class="w-16 h-16 object-contain" onerror="this.onerror=null;this.src='https://placehold.co/100x100/333/fff?text=T1';"><h3 class="font-semibold text-md md:text-lg">${match.homeTeam.name}</h3></div>
+                                <div class="w-28">${scoreOrTime}</div>
+                                <div class="flex-1 flex flex-col items-center gap-2"><img src="${match.awayTeam.logo}" alt="${match.awayTeam.name}" class="w-16 h-16 object-contain" onerror="this.onerror=null;this.src='https://placehold.co/100x100/333/fff?text=T2';"><h3 class="font-semibold text-md md:text-lg">${match.awayTeam.name}</h3></div>
+                            </div>
+                        </div>`;
+                }).join('');
+
+                const leagueContainer = document.createElement('div');
+                leagueContainer.className = 'bg-slate-800/50 rounded-2xl shadow-lg overflow-hidden border border-slate-700/50 fade-in';
+                leagueContainer.innerHTML = leagueHeader + matchesHTML;
+                matchesContainer.appendChild(leagueContainer);
+            }
+        };
+        
+        const showMatchDetails = (index) => {
+            const match = allMatches[index];
+            if (!match) return;
+            document.getElementById('modal-league-info').innerHTML = `<img src="${match.league.logo}" class="w-8 h-8 object-contain"><span class="font-semibold">${match.league.name}</span>`;
+            document.getElementById('modal-home-logo').src = match.homeTeam.logo;
+            document.getElementById('modal-home-name').textContent = match.homeTeam.name;
+            document.getElementById('modal-away-logo').src = match.awayTeam.logo;
+            document.getElementById('modal-away-name').textContent = match.awayTeam.name;
+            document.getElementById('modal-venue').textContent = match.venue || 'غير محدد';
+            document.getElementById('modal-referee').textContent = match.referee || 'غير محدد';
+            
+            let scoreOrTimeHTML = '';
+            if (match.status === 'NS') scoreOrTimeHTML = `<div class="text-3xl font-bold text-gray-300 tracking-wider">${match.fixtureTime}</div>`;
+            else if (['FT', 'AET', 'PEN'].includes(match.status)) scoreOrTimeHTML = `<div class="text-4xl font-bold text-white">${match.score.home} - ${match.score.away}</div><div class="text-sm text-gray-400 mt-1">${match.status}</div>`;
+            else if (['1H', 'HT', '2H', 'ET'].includes(match.status)) scoreOrTimeHTML = `<div class="text-4xl font-bold text-green-400">${match.score.home} - ${match.score.away}</div><div class="text-sm text-red-500 mt-1">${match.time}'</div>`;
+            else scoreOrTimeHTML = `<div class="text-xl font-bold text-yellow-500">مؤجلة</div>`;
+            document.getElementById('modal-score-time').innerHTML = scoreOrTimeHTML;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.modal-content').classList.remove('scale-95');
+            }, 10);
+        };
+
+        const closeModal = () => {
+            modal.classList.add('opacity-0');
+            modal.querySelector('.modal-content').classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
+        
+        const toggleSidebar = () => {
+            sidebar.classList.toggle('translate-x-full');
+            sidebarOverlay.classList.toggle('hidden');
+        };
+
+        const handleDateFilterClick = (e) => {
+            const day = e.currentTarget.dataset.day;
+            allFilterButtons.forEach(btn => btn.classList.remove('filter-btn-active'));
+            e.currentTarget.classList.add('filter-btn-active');
+            
+            const today = new Date();
+            let targetDate = new Date();
+            if (day === 'yesterday') targetDate.setDate(today.getDate() - 1);
+            if (day === 'tomorrow') targetDate.setDate(today.getDate() + 1);
+            
+            fetchMatches(getFormattedDate(targetDate));
+        };
+
+        const handleLiveClick = () => {
+            allFilterButtons.forEach(btn => btn.classList.remove('filter-btn-active'));
+            btnLive.classList.add('filter-btn-active');
+
+            mainContentGrid.classList.add('hidden');
+            const liveStatuses = ['1H', 'HT', '2H', 'ET', 'P'];
+            const liveMatches = allMatches.filter(m => liveStatuses.includes(m.status));
+            renderLiveMatches(liveMatches);
+        };
+
+        const handleLeagueClick = (event, leagueId) => {
+            event.preventDefault();
+            currentLeagueFilter = leagueId;
+            renderMatches(allMatches, currentLeagueFilter);
+
+            document.querySelectorAll('#leagues-list .sidebar-link').forEach(link => link.classList.remove('sidebar-link-active'));
+            event.currentTarget.classList.add('sidebar-link-active');
+            
+            if (window.innerWidth < 768) { // md breakpoint
+                toggleSidebar();
+            }
+        };
+
+        dateFilterButtons.forEach(button => button.addEventListener('click', handleDateFilterClick));
+        btnLive.addEventListener('click', handleLiveClick);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+        toggleSidebarBtn.addEventListener('click', toggleSidebar);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            fetchMatches(getFormattedDate(today));
+        });
+
+    </script>
+</body>
+</html>
